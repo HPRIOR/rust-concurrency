@@ -164,12 +164,14 @@ fn use_mutex(){
     {
         let mut num = m.lock().unwrap(); // aquire lock on m so that it can be changed
                                          // this is enforced by the type system. 
+                                         // lock returns a smart pointer called MutexGuard
+                                         // wrapped in a LockResult. MutexGuard implements 
+                                         // Deref* to point to our inner data, and Drop to 
+                                         // release the lock automatically when MutexGuard
+                                         // goes out of scope.
         *num = 6;
     }
 
     println!("m = {:?}", m);
 }
-
-
-
 
