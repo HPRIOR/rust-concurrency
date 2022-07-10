@@ -1,4 +1,4 @@
-use std::{sync::{mpsc, Mutex}, thread, time::Duration};
+use std::{sync::{mpsc, Mutex, Arc}, thread, time::Duration};
 
 /*
  * Design concerns - Rust and concurrency
@@ -174,4 +174,58 @@ fn use_mutex(){
 
     println!("m = {:?}", m);
 }
+
+#[allow(dead_code)]
+fn sharing_mutex_fail(){
+    // let counter = Mutex::new(0);
+    // let mut handles = vec![];
+
+    for _ in 0..10 {
+        // let handle = thread::spawn(move || {  // counter is moved multiple times because of the
+        //                                       // loop
+        //     let mut num = counter.lock().unwrap();
+        //
+        //     *num += 1;
+        // });
+        //handles.push(handle)
+    }
+}
+
+
+// Rc (reference counting) Trait allows for multiple owners for a value. If we try to use it here
+// we will still get an error. This is because the normal Rc doesn't implement the Send Trait, so
+// it is not thread safe. The subtraction and addition of references in Rc would be subject to race
+// conditions if done naively in a multithreaded context. 
+// 
+// Arc is a version of Rc that is Atomic (Atomic reference count) whic is thread safe. This comes
+// with a performance penalty so is implemented in a seperate trait.
+#[allow(dead_code)]
+fn sharing_mutex_win(){
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        // the clone of arc allows us to create mulitple new references to counter in a multi
+        // threaded context
+        let counter = Arc::clone(&counter);
+        let handle = thread::spawn(move || {  
+            let mut num = counter.lock().unwrap();
+
+            *num += 1;
+        });
+        handles.push(handle)
+    }
+    for handle in handles {
+        handle.join().unwrap(); // wait for each thread
+    }
+    println!("result: {}", *counter.lock().unwrap());
+}
+
+
+
+
+
+
+
+
 
